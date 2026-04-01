@@ -72,10 +72,10 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div style={{ marginTop: 24, padding: 14, background: 'var(--bg)', borderRadius: 8, border: '1px solid var(--border)' }}>
+          {/* <div style={{ marginTop: 24, padding: 14, background: 'var(--bg)', borderRadius: 8, border: '1px solid var(--border)' }}>
             <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>Demo Credentials</p>
             <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>superadmin@crm.com / Admin@123</p>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

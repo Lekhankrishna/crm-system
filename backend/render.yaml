@@ -6,3 +6,12 @@ services:
     rootDir: backend
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        value: postgresql://postgres:Lekhujp%40123@db.qhivqhpebzztiaaabouy.supabase.co:5432/postgres
+      - key: SECRET_KEY
+        value: d26764d49ba349da35eab9470f0c16acc583de748a5109a2c870f4b731c4d4dd
+      - key: ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "480"

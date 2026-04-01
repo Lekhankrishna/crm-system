@@ -3,8 +3,9 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, and_
 from typing import List, Optional
 from datetime import datetime, date
-import pandas as pd
+import csv
 import io
+import re
 from app.db.session import get_db
 from app.models.models import User, Case, CallLog, CaseStatus, UserRole
 from app.schemas.schemas import CaseOut, CaseDetail, CaseAllocate
@@ -23,85 +24,68 @@ async def upload_cases_csv(
 
     content = await file.read()
     try:
-        if file.filename.endswith('.csv'):
-            # Try different encodings
-            for enc in ['utf-8', 'latin-1', 'cp1252']:
-                try:
-                    df = pd.read_csv(io.BytesIO(content), encoding=enc, dtype=str)
-                    break
-                except UnicodeDecodeError:
-                    continue
-        else:
-            df = pd.read_excel(io.BytesIO(content), dtype=str)
+        text = None
+        for enc in ['utf-8', 'latin-1', 'cp1252']:
+            try:
+                text = content.decode(enc)
+                break
+            except UnicodeDecodeError:
+                continue
+        if text is None:
+            raise HTTPException(status_code=400, detail="Could not decode file encoding")
+        reader = csv.DictReader(io.StringIO(text))
+        rows = list(reader)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to parse file: {str(e)}")
 
-    if df.empty:
+    if not rows:
         raise HTTPException(status_code=400, detail="File is empty or has no data rows")
 
-    # Normalize column names: strip whitespace, lowercase, replace spaces/special chars
-    df.columns = (
-        df.columns.str.strip()
-        .str.lower()
-        .str.replace(r'[\s\-\.]+', '_', regex=True)
-        .str.replace(r'[^a-z0-9_]', '', regex=True)
-    )
+    def normalize(col):
+        col = col.strip().lower()
+        col = re.sub(r'[\s\-\.]+', '_', col)
+        col = re.sub(r'[^a-z0-9_]', '', col)
+        return col
 
-    detected_cols = list(df.columns)
+    rows = [{normalize(k): v for k, v in row.items()} for row in rows]
+    detected_cols = list(rows[0].keys()) if rows else []
 
-    # Flexible column mapping — every common variation
     column_map = {
-        'loan_number': [
-            'loan_number', 'loan_no', 'loanno', 'loan_num', 'loannum',
-            'account_number', 'account_no', 'acc_no', 'accno',
-            'case_id', 'caseid', 'case_no', 'ref_no', 'refno', 'id'
-        ],
-        'customer_name': [
-            'customer_name', 'customer', 'name', 'borrower', 'borrower_name',
-            'client_name', 'client', 'full_name', 'fullname', 'debtor', 'debtor_name'
-        ],
-        'primary_phone': [
-            'primary_phone', 'phone', 'mobile', 'mobile_no', 'mobileno',
-            'contact', 'contact_no', 'contactno', 'phone_no', 'phoneno',
-            'number', 'phone_number', 'mobile_number', 'cell', 'cell_no'
-        ],
-        'alternate_number': [
-            'alternate_number', 'alternate_phone', 'alt_phone', 'alt_no',
-            'alternate_no', 'alternate', 'secondary_phone', 'other_phone',
-            'phone2', 'mobile2', 'contact2'
-        ],
-        'address': ['address', 'addr', 'full_address', 'residential_address', 'home_address'],
-        'pincode': ['pincode', 'pin_code', 'pin', 'zip', 'zipcode', 'postal_code', 'postalcode'],
-        'outstanding_amount': [
-            'outstanding_amount', 'outstanding', 'amount', 'balance',
-            'due_amount', 'pending_amount', 'os_amount', 'os_bal',
-            'overdue_amount', 'principal', 'total_due', 'dpd_amount'
-        ],
-        'bucket': [
-            'bucket', 'dpd', 'dpd_bucket', 'days_past_due', 'dpd_range',
-            'overdue_days', 'bucket_type', 'category', 'aging'
-        ],
-        'bank_name': [
-            'bank_name', 'bank', 'lender', 'lender_name', 'financier',
-            'nbfc', 'institution', 'source_bank', 'product_bank'
-        ],
-        'last_payment_date': [
-            'last_payment_date', 'last_payment', 'lpd', 'last_paid',
-            'last_paid_date', 'payment_date', 'last_emi_date'
-        ],
+        'loan_number': ['loan_number','loan_no','loanno','loan_num','account_number','account_no','acc_no','case_id','caseid','case_no','ref_no','refno','id'],
+        'customer_name': ['customer_name','customer','name','borrower','borrower_name','client_name','client','full_name','fullname','debtor','debtor_name'],
+        'primary_phone': ['primary_phone','phone','mobile','mobile_no','mobileno','contact','contact_no','contactno','phone_no','phoneno','number','phone_number','mobile_number','cell','cell_no'],
+        'alternate_number': ['alternate_number','alternate_phone','alt_phone','alt_no','alternate_no','alternate','secondary_phone','other_phone','phone2','mobile2','contact2'],
+        'address': ['address','addr','full_address','residential_address','home_address'],
+        'pincode': ['pincode','pin_code','pin','zip','zipcode','postal_code','postalcode'],
+        'outstanding_amount': ['outstanding_amount','outstanding','amount','balance','due_amount','pending_amount','os_amount','os_bal','overdue_amount','principal','total_due','dpd_amount'],
+        'bucket': ['bucket','dpd','dpd_bucket','days_past_due','dpd_range','overdue_days','bucket_type','category','aging'],
+        'bank_name': ['bank_name','bank','lender','lender_name','financier','nbfc','institution','source_bank','product_bank'],
+        'last_payment_date': ['last_payment_date','last_payment','lpd','last_paid','last_paid_date','payment_date','last_emi_date'],
     }
 
-    rename_map = {}
-    for field, aliases in column_map.items():
-        for alias in aliases:
-            if alias in df.columns and alias not in rename_map:
-                rename_map[alias] = field
-                break
-    df = df.rename(columns=rename_map)
+    def get_field(row, field):
+        for alias in column_map.get(field, [field]):
+            if alias in row:
+                return row[alias]
+        return ''
 
-    # Only require loan_number and customer_name — phone is optional
+    def safe(row, col):
+        val = get_field(row, col)
+        if val is None or str(val).strip().lower() in ('', 'nan', 'none'):
+            return None
+        return str(val).strip()
+
+    def safe_float(row, col):
+        val = safe(row, col)
+        if not val:
+            return 0.0
+        try:
+            return float(str(val).replace(',', '').replace('₹', '').strip())
+        except:
+            return 0.0
+
     required = ['loan_number', 'customer_name']
-    missing = [r for r in required if r not in df.columns]
+    missing = [r for r in required if not get_field(rows[0], r)]
     if missing:
         raise HTTPException(
             status_code=400,
@@ -111,8 +95,8 @@ async def upload_cases_csv(
         )
 
     created, skipped = 0, 0
-    for _, row in df.iterrows():
-        loan_number = str(row.get('loan_number', '') or '').strip()
+    for row in rows:
+        loan_number = safe(row, 'loan_number') or ''
         if not loan_number or loan_number.lower() in ('nan', 'none', ''):
             skipped += 1
             continue
@@ -120,38 +104,24 @@ async def upload_cases_csv(
             skipped += 1
             continue
 
-        def safe(col):
-            val = row.get(col)
-            if val is None or (isinstance(val, float) and pd.isna(val)):
-                return None
-            return str(val).strip() or None
-
-        def safe_float(col):
-            val = safe(col)
-            if not val:
-                return 0.0
-            try:
-                return float(str(val).replace(',', '').replace('₹', '').strip())
-            except:
-                return 0.0
-
         case = Case(
             loan_number=loan_number,
-            customer_name=str(row.get('customer_name', '') or '').strip() or 'Unknown',
-            primary_phone=safe('primary_phone') or '',
-            alternate_number=safe('alternate_number'),
-            address=safe('address'),
-            pincode=safe('pincode'),
-            outstanding_amount=safe_float('outstanding_amount'),
-            bucket=safe('bucket'),
-            bank_name=safe('bank_name'),
-            last_payment_date=safe('last_payment_date'),
+            customer_name=safe(row, 'customer_name') or 'Unknown',
+            primary_phone=safe(row, 'primary_phone') or '',
+            alternate_number=safe(row, 'alternate_number'),
+            address=safe(row, 'address'),
+            pincode=safe(row, 'pincode'),
+            outstanding_amount=safe_float(row, 'outstanding_amount'),
+            bucket=safe(row, 'bucket'),
+            bank_name=safe(row, 'bank_name'),
+            last_payment_date=safe(row, 'last_payment_date'),
         )
         db.add(case)
         created += 1
 
     db.commit()
-    return {"created": created, "skipped": skipped, "total_rows": len(df)}
+    return {"created": created, "skipped": skipped, "total_rows": len(rows)}
+
 
 @router.post("/allocate")
 def allocate_cases(payload: CaseAllocate, db: Session = Depends(get_db), current_user: User = Depends(require_admin_or_above)):
@@ -165,6 +135,7 @@ def allocate_cases(payload: CaseAllocate, db: Session = Depends(get_db), current
     )
     db.commit()
     return {"allocated": updated, "agent": agent.name}
+
 
 @router.get("/", response_model=List[CaseOut])
 def list_cases(
@@ -203,6 +174,7 @@ def list_cases(
 
     return q.order_by(Case.created_at.desc()).offset(skip).limit(limit).all()
 
+
 @router.get("/stats/summary")
 def cases_summary(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     q = db.query(Case)
@@ -229,6 +201,7 @@ def cases_summary(db: Session = Depends(get_db), current_user: User = Depends(ge
         "calls_today": calls_today_count, "unallocated": unallocated
     }
 
+
 @router.get("/{case_id}", response_model=CaseDetail)
 def get_case(case_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     case = db.query(Case).options(
@@ -242,6 +215,7 @@ def get_case(case_id: int, db: Session = Depends(get_db), current_user: User = D
     if current_user.role == UserRole.agent and case.agent_id != current_user.id:
         raise HTTPException(status_code=403, detail="Access denied")
     return case
+
 
 @router.put("/{case_id}/status")
 def update_case_status(case_id: int, status: CaseStatus, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):

@@ -60,6 +60,8 @@ export default function CasesPage() {
                   <th>Loan No.</th>
                   <th>Phone</th>
                   <th>Bank</th>
+                  <th>Loan Amount</th>
+                  <th>POS</th>
                   <th>Outstanding</th>
                   <th>Bucket</th>
                   <th>Status</th>
@@ -74,6 +76,8 @@ export default function CasesPage() {
                     <td><code style={{ fontSize: 11, background: '#F1F5F9', padding: '2px 6px', borderRadius: 4 }}>{c.loan_number}</code></td>
                     <td>{c.primary_phone}</td>
                     <td style={{ color: 'var(--text-secondary)' }}>{c.bank_name || '—'}</td>
+                    <td><strong>{c.loan_amount != null ? `₹${c.loan_amount?.toLocaleString('en-IN')}` : '—'}</strong></td>
+                    <td><strong>{c.pos != null ? `₹${c.pos?.toLocaleString('en-IN')}` : '—'}</strong></td>
                     <td><strong>₹{c.outstanding_amount?.toLocaleString('en-IN')}</strong></td>
                     <td>{c.bucket ? <span className="badge badge-warning">{c.bucket}</span> : '—'}</td>
                     <td><StatusBadge status={c.status} /></td>
@@ -88,7 +92,7 @@ export default function CasesPage() {
                   </tr>
                 ))}
                 {cases.length === 0 && (
-                  <tr><td colSpan={9} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>No cases found</td></tr>
+                  <tr><td colSpan={11} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>No cases found</td></tr>
                 )}
               </tbody>
             </table>

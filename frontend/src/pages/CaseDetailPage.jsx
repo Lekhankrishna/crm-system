@@ -69,7 +69,7 @@ const TRACING_TYPES = ['phone', 'whatsapp', 'telegram', 'address', 'employer', '
 
 /* ── Inline Call Log Panel (no modal) ───────────────────────────── */
 function CallLogPanel({ caseId, onSaved, onCancel }) {
-  const [step, setStep] = useState(1); // 1 = pick code, 2 = fill details
+  const [step, setStep] = useState(1);
   const [selected, setSelected] = useState(null);
   const [form, setForm] = useState({ remarks: '', follow_up_date: '', promise_amount: '', promise_date: '' });
   const [saving, setSaving] = useState(false);
@@ -104,7 +104,6 @@ function CallLogPanel({ caseId, onSaved, onCancel }) {
       background: '#fff', border: '2px solid var(--primary)', borderRadius: 14,
       overflow: 'hidden', marginBottom: 20, boxShadow: '0 4px 20px rgba(79,70,229,0.12)'
     }}>
-      {/* Header */}
       <div style={{ background: 'var(--primary)', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <Phone size={18} color="#fff" />
@@ -114,8 +113,6 @@ function CallLogPanel({ caseId, onSaved, onCancel }) {
       </div>
 
       <div style={{ padding: 20 }}>
-
-        {/* Step 1 — Pick feedback code */}
         <div style={{ marginBottom: step === 1 ? 0 : 16 }}>
           <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
             Step 1 — What was the call outcome?
@@ -148,7 +145,6 @@ function CallLogPanel({ caseId, onSaved, onCancel }) {
           </div>
         </div>
 
-        {/* Step 2 — Fill details (shown after code selected) */}
         {selected && (
           <div style={{ marginTop: 20, paddingTop: 20, borderTop: '1px dashed var(--border)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
@@ -161,8 +157,6 @@ function CallLogPanel({ caseId, onSaved, onCancel }) {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-
-              {/* Comment/Remarks box — always shown */}
               <div className="form-group">
                 <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <MessageSquare size={13} />
@@ -192,7 +186,6 @@ function CallLogPanel({ caseId, onSaved, onCancel }) {
                 </div>
               </div>
 
-              {/* Follow-up date — shown if relevant */}
               {codeInfo?.needsFollowup && (
                 <div className="form-group">
                   <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -209,7 +202,6 @@ function CallLogPanel({ caseId, onSaved, onCancel }) {
                 </div>
               )}
 
-              {/* PTP fields — promise amount + date */}
               {codeInfo?.needsPTP && (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, padding: 14, background: '#ECFDF5', borderRadius: 10, border: '1px solid #A7F3D0' }}>
                   <div className="form-group">
@@ -240,7 +232,6 @@ function CallLogPanel({ caseId, onSaved, onCancel }) {
                 </div>
               )}
 
-              {/* Wrong number — show alert */}
               {selected.value === 'WN' && (
                 <div className="alert alert-warning" style={{ fontSize: 12 }}>
                   <AlertCircle size={14} />
@@ -249,7 +240,6 @@ function CallLogPanel({ caseId, onSaved, onCancel }) {
               )}
             </div>
 
-            {/* Submit */}
             <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
               <button
                 className="btn btn-primary"
@@ -327,7 +317,6 @@ export default function CaseDetailPage() {
         </div>
       </div>
 
-      {/* Inline call log panel */}
       {showCallLog && (
         <CallLogPanel
           caseId={id}
@@ -348,6 +337,8 @@ export default function CaseDetailPage() {
               ['Address', c.address || '—'],
               ['Pincode', c.pincode || '—'],
               ['Bank', c.bank_name || '—'],
+              ['Loan Amount', c.loan_amount != null ? `₹${c.loan_amount?.toLocaleString('en-IN')}` : '—'],
+              ['POS', c.pos != null ? `₹${c.pos?.toLocaleString('en-IN')}` : '—'],
               ['Outstanding', `₹${c.outstanding_amount?.toLocaleString('en-IN')}`],
               ['Bucket (DPD)', c.bucket || '—'],
               ['Last Payment', c.last_payment_date || '—'],
@@ -404,7 +395,6 @@ export default function CaseDetailPage() {
                       <span style={{ fontSize: 12, color: 'var(--text-secondary)', marginLeft: 'auto' }}>by {log.agent?.name}</span>
                     </div>
 
-                    {/* Remarks prominently displayed */}
                     {log.remarks && (
                       <div style={{ display: 'flex', gap: 8, background: codeInfo?.bg || '#F8FAFC', borderRadius: 8, padding: '8px 12px', marginBottom: 8, border: `1px solid ${codeInfo?.color}30` }}>
                         <MessageSquare size={13} style={{ color: codeInfo?.color, flexShrink: 0, marginTop: 2 }} />

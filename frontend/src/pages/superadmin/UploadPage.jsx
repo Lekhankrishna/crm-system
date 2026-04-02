@@ -40,9 +40,9 @@ export default function UploadPage() {
   };
 
   const downloadTemplate = () => {
-    const csv = `loan_number,customer_name,primary_phone,alternate_number,address,pincode,outstanding_amount,bucket,bank_name,last_payment_date
-LN001,John Doe,9876543210,9876543211,"123 Main St, Bangalore",560001,50000,30-60,HDFC Bank,2024-01-15
-LN002,Jane Smith,9876543212,,,"456 MG Road, Mumbai",400001,120000,60-90,ICICI Bank,2024-01-10`;
+    const csv = `loan_number,customer_name,primary_phone,alternate_number,address,pincode,outstanding_amount,pos,loan_amount,bucket,bank_name,last_payment_date
+LN001,John Doe,9876543210,9876543211,"123 Main St, Bangalore",560001,50000,45000,100000,30-60,HDFC Bank,2024-01-15
+LN002,Jane Smith,9876543212,,"456 MG Road, Mumbai",400001,120000,110000,200000,60-90,ICICI Bank,2024-01-10`;
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -70,6 +70,8 @@ LN002,Jane Smith,9876543212,,,"456 MG Road, Mumbai",400001,120000,60-90,ICICI Ba
             ['address', 'Borrower address', false],
             ['pincode', 'PIN code', false],
             ['outstanding_amount', 'Outstanding balance', false],
+            ['pos', 'Principal Outstanding (POS)', false],
+            ['loan_amount', 'Sanctioned loan amount', false],
             ['bucket', 'DPD bucket (30-60, 60-90...)', false],
             ['bank_name', 'Lending bank name', false],
             ['last_payment_date', 'Last payment date', false],
@@ -135,4 +137,4 @@ LN002,Jane Smith,9876543212,,,"456 MG Road, Mumbai",400001,120000,60-90,ICICI Ba
       </div>
     </div>
   );
-}
+}git add .

@@ -66,7 +66,9 @@ class Case(Base):
     alternate_number = Column(String(20))
     last_payment_date = Column(String(20))
     outstanding_amount = Column(Float, default=0.0)
-    bucket = Column(String(20))  # DPD category
+    pos = Column(Float, nullable=True)
+    loan_amount = Column(Float, nullable=True)
+    bucket = Column(String(20))
     bank_name = Column(String(100))
     status = Column(SAEnum(CaseStatus), default=CaseStatus.new)
     agent_id = Column(Integer, ForeignKey("users.id"), nullable=True)
@@ -100,9 +102,9 @@ class TracingData(Base):
     id = Column(Integer, primary_key=True, index=True)
     case_id = Column(Integer, ForeignKey("cases.id"), nullable=False)
     agent_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    data_type = Column(String(50))  # phone, whatsapp, address, employer, etc
+    data_type = Column(String(50))
     value = Column(String(255))
-    source = Column(String(50))  # self-traced, external, customer-provided
+    source = Column(String(50))
     is_verified = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

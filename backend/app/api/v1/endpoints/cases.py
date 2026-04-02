@@ -57,7 +57,9 @@ async def upload_cases_csv(
         'alternate_number': ['alternate_number','alternate_phone','alt_phone','alt_no','alternate_no','alternate','secondary_phone','other_phone','phone2','mobile2','contact2'],
         'address': ['address','addr','full_address','residential_address','home_address'],
         'pincode': ['pincode','pin_code','pin','zip','zipcode','postal_code','postalcode'],
-        'outstanding_amount': ['outstanding_amount','outstanding','amount','balance','due_amount','pending_amount','os_amount','os_bal','overdue_amount','principal','total_due','dpd_amount'],
+        'outstanding_amount': ['outstanding_amount','outstanding','amount','balance','due_amount','pending_amount','os_amount','os_bal','overdue_amount','total_due','dpd_amount'],
+        'pos': ['pos','principle_outstanding','principal_outstanding','principal_os','pos_amount','p_o_s'],
+        'loan_amount': ['loan_amount','loan_amt','sanctioned_amount','sanction_amount','approved_amount','disbursed_amount','disbursal_amount'],
         'bucket': ['bucket','dpd','dpd_bucket','days_past_due','dpd_range','overdue_days','bucket_type','category','aging'],
         'bank_name': ['bank_name','bank','lender','lender_name','financier','nbfc','institution','source_bank','product_bank'],
         'last_payment_date': ['last_payment_date','last_payment','lpd','last_paid','last_paid_date','payment_date','last_emi_date'],
@@ -78,11 +80,11 @@ async def upload_cases_csv(
     def safe_float(row, col):
         val = safe(row, col)
         if not val:
-            return 0.0
+            return None
         try:
             return float(str(val).replace(',', '').replace('₹', '').strip())
         except:
-            return 0.0
+            return None
 
     required = ['loan_number', 'customer_name']
     missing = [r for r in required if not get_field(rows[0], r)]
@@ -111,7 +113,9 @@ async def upload_cases_csv(
             alternate_number=safe(row, 'alternate_number'),
             address=safe(row, 'address'),
             pincode=safe(row, 'pincode'),
-            outstanding_amount=safe_float(row, 'outstanding_amount'),
+            outstanding_amount=safe_float(row, 'outstanding_amount') or 0.0,
+            pos=safe_float(row, 'pos'),
+            loan_amount=safe_float(row, 'loan_amount'),
             bucket=safe(row, 'bucket'),
             bank_name=safe(row, 'bank_name'),
             last_payment_date=safe(row, 'last_payment_date'),

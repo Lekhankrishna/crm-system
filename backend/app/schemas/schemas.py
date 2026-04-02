@@ -57,6 +57,8 @@ class CaseCreate(BaseModel):
     alternate_number: Optional[str] = None
     last_payment_date: Optional[str] = None
     outstanding_amount: Optional[float] = 0.0
+    pos: Optional[float] = None
+    loan_amount: Optional[float] = None
     bucket: Optional[str] = None
     bank_name: Optional[str] = None
 
@@ -74,6 +76,8 @@ class CaseOut(BaseModel):
     alternate_number: Optional[str]
     last_payment_date: Optional[str]
     outstanding_amount: float
+    pos: Optional[float]
+    loan_amount: Optional[float]
     bucket: Optional[str]
     bank_name: Optional[str]
     status: CaseStatus

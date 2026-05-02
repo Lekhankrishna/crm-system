@@ -7,27 +7,36 @@ import { format } from 'date-fns';
 
 export default function CasesPage() {
   const [cases, setCases] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const limit = 50;
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState({ status: '', bank_name: '' });
   const navigate = useNavigate();
 
+
   const load = () => {
     setLoading(true);
-    casesAPI.list({ ...filters, search, limit: 100 })
-      .then(r => setCases(r.data))
+    const skip = (page - 1) * limit;
+    casesAPI.list({ ...filters, search, skip, limit })
+      .then(r => {
+        setCases(r.data.items || []);
+        setTotal(r.data.total || 0);
+      })
       .finally(() => setLoading(false));
   };
-  useEffect(load, [filters]);
+  useEffect(() => { load(); }, [filters, page]);
 
-  const handleSearch = (e) => { e.preventDefault(); load(); };
+  const handleSearch = (e) => { e.preventDefault(); setPage(1); load(); };
+
 
   return (
     <div>
       <div className="page-header">
         <div>
           <h1 className="page-title">All Cases</h1>
-          <p className="page-subtitle">{cases.length} cases loaded</p>
+          <p className="page-subtitle">Showing {cases.length} of {total} cases</p>
         </div>
         <button className="btn btn-secondary" onClick={load}><RefreshCw size={14} /> Refresh</button>
       </div>
@@ -97,6 +106,28 @@ export default function CasesPage() {
               </tbody>
             </table>
           </div>
+          
+          {total > limit && (
+            <div style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border)' }}>
+              <button 
+                className="btn btn-secondary btn-sm" 
+                disabled={page === 1} 
+                onClick={() => setPage(p => p - 1)}
+              >
+                Previous
+              </button>
+              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                Page {page} of {Math.ceil(total / limit)}
+              </span>
+              <button 
+                className="btn btn-secondary btn-sm" 
+                disabled={page >= Math.ceil(total / limit)} 
+                onClick={() => setPage(p => p + 1)}
+              >
+                Next
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

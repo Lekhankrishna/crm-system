@@ -20,7 +20,7 @@ export default function AllocatePage() {
       casesAPI.list({ unallocated: true, limit: 200 }),
       usersAPI.agents()
     ]);
-    setCases(c.data);
+    setCases(c.data.items || []);
     setAgents(a.data);
     setLoading(false);
   };

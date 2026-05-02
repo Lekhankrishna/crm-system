@@ -8,7 +8,7 @@ import io
 import re
 from app.db.session import get_db
 from app.models.models import User, Case, CallLog, CaseStatus, UserRole
-from app.schemas.schemas import CaseOut, CaseDetail, CaseAllocate
+from app.schemas.schemas import CaseOut, CaseDetail, CaseAllocate, CaseListOut
 from app.api.v1.deps import get_current_user, require_super_admin, require_admin_or_above
 
 router = APIRouter()
@@ -141,7 +141,7 @@ def allocate_cases(payload: CaseAllocate, db: Session = Depends(get_db), current
     return {"allocated": updated, "agent": agent.name}
 
 
-@router.get("/", response_model=List[CaseOut])
+@router.get("/", response_model=CaseListOut)
 def list_cases(
     status: Optional[str] = None,
     agent_id: Optional[int] = None,
@@ -176,7 +176,9 @@ def list_cases(
             (Case.primary_phone.ilike(f"%{search}%"))
         )
 
-    return q.order_by(Case.created_at.desc()).offset(skip).limit(limit).all()
+    total = q.count()
+    items = q.order_by(Case.created_at.desc()).offset(skip).limit(limit).all()
+    return {"items": items, "total": total}
 
 
 @router.get("/stats/summary")

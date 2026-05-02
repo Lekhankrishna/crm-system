@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: crm_db
+      MYSQL_USER: crm_user
+      MYSQL_PASSWORD: crm_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
+  frontend:
+    build: 
+      context: ./frontend
+      args:
+        # Uses localhost for local testing. On EC2, change this to your actual domain.
+        - VITE_API_URL=http://localhost:8000/api/v1
+    ports:
+      - "80:80"
+    restart: always
+    depends_on:
+      - backend
+
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      # This points to the 'db' container we defined above
+      - DATABASE_URL=mysql+pymysql://crm_user:crm_pass@db:3306/crm_db
+      - SECRET_KEY=local-testing-secret-key-123
+    restart: always
+    depends_on:
+      db:
+        condition: service_started
+
+volumes:
+  db_data:

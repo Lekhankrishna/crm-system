@@ -98,6 +98,9 @@ export function AgentDashboard() {
 
 export function MyCasesPage() {
   const [cases, setCases] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const limit = 50;
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
@@ -105,25 +108,30 @@ export function MyCasesPage() {
 
   const load = () => {
     setLoading(true);
-    casesAPI.list({ status, search, limit: 100 })
-      .then(r => setCases(r.data))
+    const skip = (page - 1) * limit;
+    casesAPI.list({ status, search, skip, limit })
+      .then(r => {
+        setCases(r.data.items || []);
+        setTotal(r.data.total || 0);
+      })
       .finally(() => setLoading(false));
   };
-  useEffect(load, [status]);
+  useEffect(() => { load(); }, [status, page]);
+
 
   return (
     <div>
       <div className="page-header">
         <div>
           <h1 className="page-title">My Cases</h1>
-          <p className="page-subtitle">{cases.length} cases allocated to you</p>
+          <p className="page-subtitle">Showing {cases.length} of {total} cases allocated to you</p>
         </div>
       </div>
 
       <div className="filters-bar">
         <div className="search-wrap">
           <Search size={14} />
-          <input className="form-control search-input" placeholder="Search…" value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && load()} />
+          <input className="form-control search-input" placeholder="Search…" value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { setPage(1); load(); } }} />
         </div>
         <select className="form-control" style={{ width: 150 }} value={status} onChange={e => setStatus(e.target.value)}>
           <option value="">All Status</option>
@@ -178,6 +186,28 @@ export function MyCasesPage() {
               </tbody>
             </table>
           </div>
+          
+          {total > limit && (
+            <div style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border)' }}>
+              <button 
+                className="btn btn-secondary btn-sm" 
+                disabled={page === 1} 
+                onClick={() => setPage(p => p - 1)}
+              >
+                Previous
+              </button>
+              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                Page {page} of {Math.ceil(total / limit)}
+              </span>
+              <button 
+                className="btn btn-secondary btn-sm" 
+                disabled={page >= Math.ceil(total / limit)} 
+                onClick={() => setPage(p => p + 1)}
+              >
+                Next
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

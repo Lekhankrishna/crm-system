@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  frontend:
+    build: 
+      context: ./frontend
+      args:
+        # Since Nginx proxies /api to the backend, the frontend just calls /api/v1
+        - VITE_API_URL=/api/v1
+    ports:
+      - "8080:80"
+    restart: always
+    depends_on:
+      - backend
+
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      # AWS RDS MySQL connection string
+      - DATABASE_URL=mysql+pymysql://admin:G7#kL9!pQ2z$@database-1.cirseos4sujt.us-east-1.rds.amazonaws.com:3306/crm_db
+      # Super secret key for production JWT tokens
+      - SECRET_KEY=prod-secret-key-change-me-later-to-something-very-random-123
+    restart: always

@@ -89,6 +89,10 @@ class CaseOut(BaseModel):
     class Config:
         from_attributes = True
 
+class CaseListOut(BaseModel):
+    items: List[CaseOut]
+    total: int
+
 class CaseDetail(CaseOut):
     agent: Optional[UserOut]
     call_logs: List["CallLogOut"] = []
